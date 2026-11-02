@@ -1,34 +1,49 @@
-import { useState } from 'react';
-import { Play, ShieldCheck, ShieldX, BrainCircuit, LockKeyhole } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Activity, BrainCircuit, Check, CircleAlert, CreditCard, Fingerprint, KeyRound, LockKeyhole, Play, ShieldCheck, ShieldX, WalletCards } from 'lucide-react';
 import api from '../services/api';
 
-type Scenario = { id: string; title: string; agent_id: string; merchant: string; amount_cents: number; verification_status: string; risk_score: number | null; risk_level?: string; decision: string; explanation: string; signals: { description?: string; signal?: string }[]; replay_rejected?: boolean };
+type Signal = { description?: string; signal?: string };
+type Scenario = { id: string; title: string; agent_id: string; merchant: string; amount_cents: number; authentication_outcome: string; policy_outcome: string; risk_evaluated: boolean; risk_evaluation_reason?: string; risk_score: number | null; risk_level?: string | null; detection_method?: string; decision: string; reasons?: string[]; explanation: string; signals: Signal[]; payment_status: string };
 type Simulation = { isolated: boolean; paypal_touched: boolean; scenarios: Scenario[] };
-
+type Stage = { label: string; icon: typeof Activity; status: 'pass' | 'fail' | 'blocked' | 'pending'; detail: string };
 const money = (cents: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
+const decisionLabel: Record<string, string> = { allow: 'ALLOW', review: 'REVIEW', block: 'BLOCK', rejected: 'REJECTED' };
+
+function getStages(s: Scenario): Stage[] {
+  const auth = s.authentication_outcome === 'replay_rejected' ? 'fail' : 'pass';
+  const policy = s.policy_outcome === 'not_evaluated' ? 'pending' : 'pass';
+  const risk = !s.risk_evaluated ? 'pending' : s.decision === 'block' || s.decision === 'review' ? 'blocked' : 'pass';
+  return [
+    { label: 'Agent request', icon: Activity, status: 'pass', detail: `${money(s.amount_cents)} · ${s.merchant}` },
+    { label: 'Identity verification', icon: Fingerprint, status: auth, detail: auth === 'pass' ? 'Ed25519 identity verified' : 'Nonce replay rejected' },
+    { label: 'Permission check', icon: KeyRound, status: policy, detail: policy === 'pending' ? 'Not reached' : 'Request evaluated' },
+    { label: 'Spending policy', icon: WalletCards, status: policy, detail: policy === 'pass' ? 'Within configured limits' : 'Not evaluated' },
+    { label: 'AI risk analysis', icon: BrainCircuit, status: risk, detail: s.risk_evaluated ? `${s.detection_method} · score ${s.risk_score}` : s.risk_evaluation_reason === 'authentication_rejected_first' ? 'Not evaluated — authentication rejected first' : 'Not evaluated — authorization permitted by policy' },
+    { label: 'Final decision', icon: ShieldCheck, status: s.decision === 'allow' ? 'pass' : 'fail', detail: decisionLabel[s.decision] || s.decision },
+    { label: 'Payment gate', icon: CreditCard, status: s.payment_status === 'authorized_for_checkout' ? 'pass' : 'fail', detail: s.payment_status === 'authorized_for_checkout' ? 'Eligible to begin checkout' : 'Denied · no PayPal action' },
+  ];
+}
+
+function Pipeline({ scenario, visible }: { scenario: Scenario; visible: number }) {
+  return <div className="mt-6 overflow-x-auto pb-2"><div className="flex min-w-[720px] items-start gap-1">{getStages(scenario).map((stage, index) => { const Icon = stage.icon; const shown = index <= visible; const tone = stage.status === 'pass' ? 'border-success-200 bg-success-50 text-success-600' : stage.status === 'pending' ? 'border-secondary-200 bg-secondary-50 text-secondary-400' : stage.status === 'blocked' ? 'border-warning-200 bg-warning-50 text-warning-600' : 'border-danger-200 bg-danger-50 text-danger-600'; return <div className="flex flex-1 items-start" key={stage.label}><div className={`min-w-[90px] flex-1 rounded-xl border p-3 transition-all duration-500 motion-reduce:transition-none ${tone} ${shown ? 'opacity-100 translate-y-0' : 'opacity-35 translate-y-1'}`}><Icon className="h-4 w-4" /><p className="mt-2 text-xs font-semibold leading-4">{stage.label}</p><p className="mt-1 text-[10px] leading-3 opacity-80">{shown ? stage.detail : 'Waiting'}</p></div>{index < 6 && <div className="mt-8 h-px w-3 shrink-0 bg-primary-300" />}</div>; })}</div></div>;
+}
+
+function RiskMeter({ scenario }: { scenario: Scenario }) {
+  if (!scenario.risk_evaluated) return <div className="rounded-xl bg-secondary-50 p-4 text-sm text-secondary-500">{scenario.risk_evaluation_reason === 'authentication_rejected_first' ? 'Risk analysis not evaluated — authentication rejected first.' : 'Risk analysis not evaluated — authorization permitted by policy.'}</div>;
+  const score = scenario.risk_score ?? 0;
+  return <div className="rounded-xl bg-secondary-50 p-4"><div className="flex justify-between text-sm"><span className="font-medium">Risk score</span><span className="font-semibold">{score}/100 · {scenario.risk_level}</span></div><div className="mt-3 h-2 rounded-full bg-secondary-200 overflow-hidden"><div className={`h-full rounded-full ${score >= 90 ? 'bg-danger-500' : score >= 60 ? 'bg-warning-500' : 'bg-success-500'}`} style={{ width: `${score}%` }} /></div><p className="mt-2 text-xs text-secondary-500">Source: {scenario.detection_method === 'ml_based' ? 'Isolation Forest plus deterministic signals' : 'deterministic rule-based analysis'}</p></div>;
+}
 
 export function AttackSimulator() {
-  const [result, setResult] = useState<Simulation | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  async function run() {
-    setLoading(true); setError('');
-    try { setResult((await api.post<Simulation>('/attack-simulator/run')).data); }
-    catch { setError('Simulation could not run. Confirm the admin API key is configured.'); }
-    finally { setLoading(false); }
-  }
-
+  const [result, setResult] = useState<Simulation | null>(null); const [loading, setLoading] = useState(false); const [error, setError] = useState(''); const [visible, setVisible] = useState<Record<string, number>>({});
+  useEffect(() => { if (!result) return; const timers: number[] = []; result.scenarios.forEach((scenario, scenarioIndex) => { for (let stage = 0; stage < 7; stage += 1) timers.push(window.setTimeout(() => setVisible(current => ({ ...current, [scenario.id]: Math.max(current[scenario.id] ?? -1, stage) })), scenarioIndex * 150 + stage * 100)); }); return () => timers.forEach(window.clearTimeout); }, [result]);
+  async function run() { setLoading(true); setError(''); setVisible({}); try { setResult((await api.post<Simulation>('/attack-simulator/run')).data); } catch { setError('Simulation could not run. Check the local backend and admin proxy configuration.'); } finally { setLoading(false); } }
   return <div className="space-y-6">
-    <div className="card overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-primary-950 text-white">
-      <div className="p-7 md:p-9 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="max-w-2xl"><div className="badge bg-white/10 text-primary-200 mb-4">PHASE 5A · SAFE DEMO MODE</div><h2 className="text-3xl font-semibold tracking-tight">Attack Simulator</h2><p className="mt-3 text-slate-300 leading-7">Exercise AgentGuard’s real authorization pipeline against a trusted agent, a compromised behavioral profile, and a cryptographic impersonation attempt.</p></div>
-        <button className="btn bg-white text-slate-900 hover:bg-primary-50 min-w-40" onClick={run} disabled={loading}><Play className="w-4 h-4" />{loading ? 'Running…' : 'Run simulation'}</button>
-      </div>
-      <div className="px-7 pb-6 flex flex-wrap gap-4 text-xs text-slate-300"><span className="inline-flex gap-2 items-center"><LockKeyhole className="w-4 h-4" />Server-side signing keys</span><span className="inline-flex gap-2 items-center"><ShieldCheck className="w-4 h-4" />Isolated database</span><span className="inline-flex gap-2 items-center"><ShieldX className="w-4 h-4" />No PayPal calls</span></div>
-    </div>
-    {error && <div className="card border-danger-200 bg-danger-50 p-4 text-danger-600">{error}</div>}
-    {!result && !error && <div className="grid md:grid-cols-3 gap-4">{[['Legitimate agent', 'Valid signature · normal behavior', ShieldCheck], ['Compromised agent', 'Valid identity · anomalous behavior', BrainCircuit], ['Impersonation attack', 'Invalid or replayed authentication', ShieldX]].map(([title, text, Icon]) => <div className="card p-5" key={title as string}><Icon className="w-5 h-5 text-primary-600" /><h3 className="mt-4 font-semibold">{title as string}</h3><p className="mt-1 text-sm text-secondary-500">{text as string}</p></div>)}</div>}
-    {result && <div className="space-y-4"><div className="flex items-center gap-2 text-sm text-secondary-500"><ShieldCheck className="w-4 h-4 text-success-600" />Results are isolated and synthetic · PayPal touched: {result.paypal_touched ? 'yes' : 'no'}</div>{result.scenarios.map(s => <article className="card p-5" key={s.id}><div className="flex flex-wrap justify-between gap-3"><div><p className="text-xs uppercase tracking-wider text-secondary-400">Scenario</p><h3 className="text-lg font-semibold">{s.title}</h3></div><span className={`badge ${s.decision === 'allow' ? 'badge-success' : s.decision === 'rejected' ? 'badge-danger' : 'badge-warning'}`}>{s.decision.toUpperCase()}</span></div><div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 text-sm"><div><p className="text-secondary-400">Agent</p><p className="font-mono text-xs mt-1">{s.agent_id}</p></div><div><p className="text-secondary-400">Merchant / amount</p><p className="mt-1">{s.merchant} · {money(s.amount_cents)}</p></div><div><p className="text-secondary-400">Verification</p><p className="mt-1">{s.verification_status}{s.replay_rejected ? ' · replay rejected' : ''}</p></div><div><p className="text-secondary-400">Risk score</p><p className="mt-1 font-semibold">{s.risk_score ?? '—'}{s.risk_level ? ` · ${s.risk_level}` : ''}</p></div></div><p className="mt-5 rounded-lg bg-secondary-50 p-3 text-sm text-secondary-700">{s.explanation}</p>{s.signals.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{s.signals.map((x, i) => <span className="badge badge-neutral" key={i}>{x.description || x.signal}</span>)}</div>}</article>)}</div>}
+    <div className="card overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-primary-950 text-white"><div className="p-7 md:p-9 flex flex-col md:flex-row md:items-end justify-between gap-6"><div className="max-w-3xl"><div className="badge bg-white/10 text-primary-200 mb-4">PHASE 5B · SAFE DEMO MODE</div><h2 className="text-3xl font-semibold tracking-tight">Stop dangerous payments before money moves.</h2><p className="mt-3 text-slate-300 leading-7">Watch AgentGuard verify identity, enforce policy, analyze behavior, and close the payment gate when an autonomous agent turns rogue.</p></div><button aria-label="Run simulation" className="btn bg-white text-slate-900 hover:bg-primary-50 min-w-40" onClick={run} disabled={loading}><Play className="w-4 h-4" />{loading ? 'Running…' : 'Run simulation'}</button></div><div className="px-7 pb-6 flex flex-wrap gap-4 text-xs text-slate-300"><span className="inline-flex gap-2 items-center"><LockKeyhole className="w-4 h-4" />Server-side demo keys</span><span className="inline-flex gap-2 items-center"><ShieldCheck className="w-4 h-4" />Isolated database</span><span className="inline-flex gap-2 items-center"><ShieldX className="w-4 h-4" />No PayPal calls</span></div></div>
+    <div className="card p-5"><div className="flex items-start gap-3"><CircleAlert className="w-5 h-5 text-primary-600 mt-0.5" /><div><h3 className="font-semibold">90-second judge walkthrough</h3><p className="mt-1 text-sm text-secondary-600">Compare the approved $25 purchase, the blocked $10,000 behavioral anomaly, and the replay rejected before authorization. The payment gate is immediately before PayPal checkout.</p></div></div></div>
+    {error && <div role="alert" className="card border-danger-200 bg-danger-50 p-4 text-danger-600">{error}</div>}
+    {result && <div className="flex items-center gap-2 text-sm text-secondary-500"><Check className="w-4 h-4 text-success-600" />Synthetic and isolated · PayPal touched: {result.paypal_touched ? 'yes' : 'no'}</div>}
+    {result && <div className="grid gap-5 xl:grid-cols-3">{result.scenarios.map(s => <article className="card p-5" key={s.id}><div className="flex flex-wrap justify-between gap-3"><div><p className="text-xs uppercase tracking-wider text-secondary-400">{s.id === 'legitimate' ? 'Scenario A' : s.id === 'compromised' ? 'Scenario B' : 'Scenario C'}</p><h3 className="text-lg font-semibold">{s.title}</h3></div><span className={`badge ${s.decision === 'allow' ? 'badge-success' : s.decision === 'rejected' || s.decision === 'block' ? 'badge-danger' : 'badge-warning'}`}>{decisionLabel[s.decision] || s.decision}</span></div><div className="mt-4 flex justify-between text-sm"><span className="text-secondary-500">{s.merchant}</span><span className="font-semibold">{money(s.amount_cents)}</span></div><Pipeline scenario={s} visible={visible[s.id] ?? -1} /><RiskMeter scenario={s} /><p className="mt-4 rounded-lg bg-secondary-50 p-3 text-sm text-secondary-700">{s.explanation}</p>{s.reasons && <ul className="mt-3 space-y-1 text-xs text-secondary-500">{s.reasons.map(reason => <li className="flex gap-2" key={reason}><Check className="h-3.5 w-3.5 shrink-0 text-primary-600" />{reason}</li>)}</ul>}{s.signals.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{s.signals.map((x, i) => <span className="badge badge-neutral" key={i}>{x.description || x.signal}</span>)}</div>}</article>)}</div>}
+    {!result && !error && <div className="grid md:grid-cols-3 gap-4">{[['Legitimate purchase', 'A valid $25 request should pass every gate.', ShieldCheck], ['Compromised agent', 'A valid identity can still show dangerous behavior.', BrainCircuit], ['Replay attack', 'A consumed nonce stops the request before risk analysis.', ShieldX]].map(([title, text, Icon]) => <div className="card p-5" key={title as string}><Icon className="w-5 h-5 text-primary-600" /><h3 className="mt-4 font-semibold">{title as string}</h3><p className="mt-1 text-sm text-secondary-500">{text as string}</p></div>)}</div>}
   </div>;
 }

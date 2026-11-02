@@ -59,7 +59,7 @@ def run_simulation() -> dict:
         policy = agent.spending_policy
         decision, reasons, _, before, after = AuthorizationService(db).evaluate(agent, credential, policy, 2500, "USD", "merchant-grocery", "retail", "Routine purchase", "sim-legit")
         if after > before: release_budget(db, agent.id, 2500)
-        results.append({"id": "legitimate", "title": "Legitimate agent", "agent_id": agent.agent_id, "merchant": "merchant-grocery", "amount_cents": 2500, "verification_status": "valid", "risk_score": 0, "decision": decision.value, "signals": [], "explanation": "; ".join(reasons)})
+        results.append({"id": "legitimate", "title": "Legitimate agent", "agent_id": agent.agent_id, "merchant": "merchant-grocery", "amount_cents": 2500, "verification_status": "valid", "authentication_outcome": "verified", "policy_outcome": "allowed", "risk_evaluated": False, "risk_evaluation_reason": "not_required_after_policy_authorization", "risk_score": None, "risk_level": None, "detection_method": "not_evaluated", "decision": decision.value, "reasons": reasons, "signals": [], "payment_status": "authorized_for_checkout", "explanation": "; ".join(reasons)})
 
         private, public = _keypair(); agent, credential = _agent(db, "COMPROMISED", private, public)
         now = datetime.utcnow()
@@ -68,11 +68,11 @@ def run_simulation() -> dict:
         db.commit()
         assessment = AnomalyDetectionService(db).assess_transaction(agent.id, 1_000_000, "merchant-new")
         decision = AuthorizationDecision.BLOCK if assessment["risk_score"] >= 90 else AuthorizationDecision.REVIEW if assessment["risk_score"] >= 60 else AuthorizationDecision.ALLOW
-        results.append({"id": "compromised", "title": "Compromised agent", "agent_id": agent.agent_id, "merchant": "merchant-new", "amount_cents": 1_000_000, "verification_status": "valid", "risk_score": assessment["risk_score"], "risk_level": assessment["risk_severity"], "decision": decision.value, "signals": assessment["anomaly_signals"], "explanation": "Valid identity, but the behavioral profile is anomalous."})
+        results.append({"id": "compromised", "title": "Compromised agent", "agent_id": agent.agent_id, "merchant": "merchant-new", "amount_cents": 1_000_000, "verification_status": "valid", "authentication_outcome": "verified", "policy_outcome": "allowed", "risk_evaluated": True, "risk_score": assessment["risk_score"], "risk_level": assessment["risk_severity"], "detection_method": assessment["detection_method"], "decision": decision.value, "reasons": ["Spending policy permits the request", "Behavioral risk exceeded the intervention threshold"], "signals": assessment["anomaly_signals"], "payment_status": "denied_before_paypal", "explanation": "Valid identity and policy, but the behavioral profile is anomalous. AgentGuard stops the request before PayPal checkout."})
 
         private, public = _keypair(); agent, credential = _agent(db, "IMPERSONATION", private, public)
         result = _signed_check(db, agent, private, credential)
-        result.update({"id": "impersonation", "title": "Impersonation attack", "agent_id": agent.agent_id, "merchant": "merchant-unknown", "amount_cents": 5000, "decision": "rejected", "risk_score": None, "signals": []})
+        result.update({"id": "impersonation", "title": "Impersonation / replay attack", "agent_id": agent.agent_id, "merchant": "merchant-unknown", "amount_cents": 5000, "authentication_outcome": "replay_rejected", "policy_outcome": "not_evaluated", "risk_evaluated": False, "risk_evaluation_reason": "authentication_rejected_first", "decision": "rejected", "risk_score": None, "risk_level": None, "detection_method": "not_evaluated", "reasons": ["Signature verification passed", "Nonce replay rejected before authorization"], "signals": [], "payment_status": "denied_before_authorization"})
         results.append(result)
         return {"isolated": True, "paypal_touched": False, "scenarios": results}
     finally:
