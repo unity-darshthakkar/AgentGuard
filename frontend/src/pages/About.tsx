@@ -50,7 +50,7 @@ const techStack = [
 
 const roadmap = [
   {
-    phase: 'Phase 1 (Current)',
+    phase: 'Foundation',
     title: 'Foundation & Demo',
     status: 'complete',
     items: [
@@ -65,7 +65,7 @@ const roadmap = [
     ],
   },
   {
-    phase: 'Phase 2',
+    phase: 'Authentication & Payments',
     title: 'Authentication & Payments',
     status: 'planned',
     items: [
@@ -78,7 +78,7 @@ const roadmap = [
     ],
   },
   {
-    phase: 'Phase 3',
+    phase: 'AI Anomaly Detection',
     title: 'AI Anomaly Detection',
     status: 'planned',
     items: [
@@ -90,7 +90,7 @@ const roadmap = [
     ],
   },
   {
-    phase: 'Phase 4',
+    phase: 'Production Hardening',
     title: 'Production Hardening',
     status: 'planned',
     items: [
@@ -131,14 +131,14 @@ export function About() {
         </div>
       </div>
 
-      {/* Phase Notice - compact */}
+      {/* Product status notice */}
       <div className="mb-6 p-3 bg-primary-50 border border-primary-200 rounded-lg">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
             <Info className="w-5 h-5 text-primary-600" />
           </div>
           <div>
-            <p className="font-medium text-primary-800">PayPal AI Hackathon 2026 - Phase 1 Submission</p>
+            <p className="font-medium text-primary-800">PayPal AI Hackathon 2026 demonstration</p>
             <p className="text-xs text-primary-600 mt-1">
               This is a <strong>synthetic demonstration</strong> with mock data. No real authentication, AI detection, or PayPal execution implemented.
             </p>
@@ -243,7 +243,7 @@ export function About() {
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between"><dt className="text-secondary-500">Structure</dt><dd className="font-mono text-secondary-900">Monorepo (frontend/backend/docs)</dd></div>
               <div className="flex justify-between"><dt className="text-secondary-500">License</dt><dd className="text-secondary-900">MIT</dd></div>
-              <div className="flex justify-between"><dt className="text-secondary-500">Version</dt><dd className="font-mono text-secondary-900">1.0.0-phase1</dd></div>
+              <div className="flex justify-between"><dt className="text-secondary-500">Version</dt><dd className="font-mono text-secondary-900">1.0.0</dd></div>
             </dl>
           </div>
           <div className="card p-6">

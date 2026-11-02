@@ -185,7 +185,7 @@ export function TransactionDetailPanel({ transaction, onClose }: TransactionDeta
                   </div>
                 </div>
                 <p className="text-xs text-secondary-500 text-center py-2">
-                  ⚠ Phase 1: Risk signals are simulated for demonstration purposes only.
+                  ⚠ Risk signals are synthetic demonstration data.
                 </p>
               </div>
             ))}

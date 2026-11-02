@@ -172,7 +172,7 @@ describe('TransactionDetailPanel', () => {
     // The warning text includes an emoji (⚠) which breaks it into separate text nodes
     // Use a function matcher to find the text that contains the message
     const warningText = screen.getByText(
-      (content: string) => content.includes('Phase 1: Risk signals are simulated for demonstration purposes only.')
+      (content: string) => content.includes('Risk signals are synthetic demonstration data.')
     );
     expect(warningText).toBeInTheDocument();
   });

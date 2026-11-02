@@ -201,7 +201,7 @@ export function Settings() {
               <h3 className="text-lg font-medium text-secondary-900">PayPal Integration</h3>
               <span className="badge badge-warning">Not Configured</span>
             </div>
-            <p className="text-secondary-500 mb-4">Configure PayPal Orders v2 API for payment execution (Phase 2+)</p>
+            <p className="text-secondary-500 mb-4">PayPal credentials are deployment-managed and cannot be edited in the browser.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-secondary-700 mb-1">Client ID</label>
@@ -235,7 +235,7 @@ export function Settings() {
               <div>
                 <label className="block text-sm font-medium text-secondary-700 mb-1">PostgreSQL Connection String</label>
                 <input type="text" className="input" placeholder="postgresql://user:pass@host:5432/db" disabled />
-                <p className="text-sm text-secondary-500 mt=1">For production deployment (Phase 2+)</p>
+                <p className="text-sm text-secondary-500 mt-1">Deployment-managed setting; not available in this console.</p>
               </div>
             </div>
           </div>
@@ -285,7 +285,7 @@ export function Settings() {
       {/* Demo Notice - compact */}
       <div className="mt-4 p-3 bg-primary-50 border border-primary-200 rounded-lg">
         <p className="text-xs text-primary-700">
-          <strong>Phase 1 Demo:</strong> Settings are display only. No configuration persisted. PayPal, PostgreSQL, MFA, webhooks in Phase 2+.
+          Settings requiring deployment secrets or backend infrastructure are not available in this console.
         </p>
       </div>
     </>

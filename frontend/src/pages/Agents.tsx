@@ -5,6 +5,7 @@ import { Plus, Filter, Download, Search, X } from 'lucide-react';
 import { useAgents } from '../hooks/useApi';
 import { AgentGrid } from '../components/grid/AgentGrid';
 import { LoadingState, ErrorState, EmptyState } from '../components/ui/States';
+import { downloadCsv } from '../utils/csv';
 
 const statusOptions: { value: string; label: string }[] = [
   { value: '', label: 'All Statuses' },
@@ -94,9 +95,9 @@ export function Agents() {
           <span className="text-sm text-secondary-500">
             {filteredItems.length} of {data?.total || 0} agents
           </span>
-          <button className="btn-secondary" disabled title="Export not available in demo">
+          <button className="btn-secondary" onClick={() => downloadCsv('agentguard-agents.csv', filteredItems, [{ key: 'agent_id', label: 'Agent ID' }, { key: 'name', label: 'Name' }, { key: 'status', label: 'Status' }, { key: 'owner_name', label: 'Owner' }, { key: 'owner_email', label: 'Owner Email' }])}>
             <Download className="w-4 h-4" />
-            Export
+            Export current page
           </button>
         </div>
 
@@ -150,7 +151,7 @@ export function Agents() {
       {/* Demo Notice - compact */}
       <div className="mt-4 p-3 bg-primary-50 border border-primary-200 rounded-lg">
         <p className="text-xs text-primary-700">
-          <strong>Phase 1 Demo:</strong> Agent data is synthetic. Spending permissions are display-only, not enforced. No real identity verification.
+          Agent data is synthetic demonstration data. Spending permissions and identity status are shown from the security API.
         </p>
       </div>
     </>

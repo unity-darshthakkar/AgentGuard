@@ -7,6 +7,7 @@ import { AuthorizationDecisionGrid } from '../components/grid/AuthorizationDecis
 import { AuthorizationDecisionDetailPanel } from '../components/panels/AuthorizationDecisionDetailPanel';
 import { LoadingState, ErrorState, EmptyState } from '../components/ui/States';
 import type { AuthorizationDecision } from '../types';
+import { downloadCsv } from '../utils/csv';
 
 const decisionOptions: { value: AuthorizationDecision | ''; label: string }[] = [
   { value: '', label: 'All Decisions' },
@@ -145,9 +146,9 @@ export function AuthorizationDecisions() {
               Clear Filters
             </button>
           )}
-          <button className="btn-secondary" disabled title="Export not available in demo">
+          <button className="btn-secondary" onClick={() => downloadCsv('agentguard-authorization-decisions-page.csv', filteredItems, [{ key: 'request_id', label: 'Request ID' }, { key: 'agent_id', label: 'Agent ID' }, { key: 'decision', label: 'Decision' }, { key: 'amount_cents', label: 'Amount Cents' }, { key: 'currency', label: 'Currency' }, { key: 'merchant_id', label: 'Merchant ID' }])} title="Exports the current filtered page">
             <Download className="w-4 h-4" />
-            Export
+            Export current page
           </button>
           <button
             type="button"
@@ -213,8 +214,7 @@ export function AuthorizationDecisions() {
       {/* Demo Notice - compact */}
       <div className="mt-4 p-3 bg-primary-50 border border-primary-200 rounded-lg">
         <p className="text-xs text-primary-700">
-          <strong>Phase 1 Demo:</strong> Authorization decision data is synthetic. Decisions, reasons, and policy violations
-          are simulated for demonstration. No real Ed25519 agent authentication or PayPal authorization execution.
+          Authorization decision data is synthetic demonstration data from the security API.
         </p>
       </div>
     </>

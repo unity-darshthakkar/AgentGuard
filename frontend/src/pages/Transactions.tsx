@@ -6,6 +6,7 @@ import { useTransactions } from '../hooks/useApi';
 import { TransactionGrid } from '../components/grid/TransactionGrid';
 import { TransactionDetailPanel } from '../components/panels/TransactionDetailPanel';
 import { LoadingState, ErrorState, EmptyState } from '../components/ui/States';
+import { downloadCsv } from '../utils/csv';
 
 const statusOptions: { value: string; label: string }[] = [
   { value: '', label: 'All Statuses' },
@@ -137,9 +138,9 @@ export function Transactions() {
           <span className="text-sm text-secondary-500">
             {filteredItems.length} of {data?.total || 0} transactions
           </span>
-          <button className="btn-secondary" disabled title="Export not available in demo">
+          <button className="btn-secondary" onClick={() => downloadCsv('agentguard-transactions-page.csv', filteredItems, [{ key: 'transaction_id', label: 'Transaction ID' }, { key: 'merchant_name', label: 'Merchant' }, { key: 'amount_usd', label: 'Amount USD' }, { key: 'currency', label: 'Currency' }, { key: 'status', label: 'Status' }, { key: 'risk_score', label: 'Risk Score' }])} title="Exports the current filtered page">
             <Download className="w-4 h-4" />
-            Export
+            Export current page
           </button>
         </div>
 
@@ -193,8 +194,7 @@ export function Transactions() {
       {/* Demo Notice - compact */}
       <div className="mt-4 p-3 bg-primary-50 border border-primary-200 rounded-lg">
         <p className="text-xs text-primary-700">
-          <strong>Phase 1 Demo:</strong> Transaction data is synthetic. Risk scores are static mock values,
-          not ML-based. Status decisions are simulated. No PayPal API integration.
+          Transaction data is synthetic demonstration data. Export includes the current filtered page.
         </p>
       </div>
     </>

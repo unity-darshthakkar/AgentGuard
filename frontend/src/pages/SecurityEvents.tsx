@@ -6,6 +6,7 @@ import { EmptyState, LoadingState, ErrorState } from '../components/ui/States';
 import { SecurityEvent, SecurityEventSeverity, SecurityEventType } from '../types';
 import { formatDate, getSeverityColor, parseJsonSafe } from '../utils/formatters';
 import { useSecurityEvents } from '../hooks/useApi';
+import { downloadCsv } from '../utils/csv';
 
 const severityOptions: { value: string; label: string }[] = [
   { value: '', label: 'All Severities' },
@@ -167,9 +168,9 @@ export function SecurityEvents() {
           <span className="text-sm text-secondary-500">
             {filteredEvents.length} of {data?.total || 0} events
           </span>
-          <button className="btn-secondary" disabled title="Export not available in demo">
+          <button className="btn-secondary" onClick={() => downloadCsv('agentguard-security-events-page.csv', filteredEvents, [{ key: 'event_id', label: 'Event ID' }, { key: 'event_type', label: 'Type' }, { key: 'severity', label: 'Severity' }, { key: 'title', label: 'Title' }, { key: 'agent_id', label: 'Agent ID' }, { key: 'detected_at', label: 'Detected At' }])} title="Exports the current filtered page">
             <Download className="w-4 h-4" />
-            Export
+            Export current page
           </button>
         </div>
 
@@ -338,7 +339,7 @@ export function SecurityEvents() {
                 <div className="pt-4 border-t border-secondary-200">
                   <button className="btn-primary w-full" disabled>
                     <Bell className="w-4 h-4" />
-                    Acknowledge Event (Demo Only)
+                    Acknowledge Event (Not available)
                   </button>
                 </div>
               )}
@@ -350,7 +351,7 @@ export function SecurityEvents() {
       {/* Demo Notice - compact */}
       <div className="mt-4 p-3 bg-primary-50 border border-primary-200 rounded-lg">
         <p className="text-xs text-primary-700">
-          <strong>Phase 1 Demo:</strong> Security events are synthetic. No real anomaly detection or ML-based analysis. Acknowledge button is non-functional.
+          Security events are synthetic demonstration data. Acknowledge is unavailable in this read-only dashboard.
         </p>
       </div>
     </>

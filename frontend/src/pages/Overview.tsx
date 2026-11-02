@@ -5,8 +5,10 @@ import { useDashboardSummary } from '../hooks/useApi';
 import { KPICard } from '../components/ui/KPICard';
 import { ErrorState, LoadingState } from '../components/ui/States';
 import { formatCurrency, formatNumber } from '../utils/formatters';
+import { useNavigate } from 'react-router-dom';
 
 export function Overview() {
+  const navigate = useNavigate();
   const { data, loading, error, refetch } = useDashboardSummary();
 
   const kpis = data ? [
@@ -162,29 +164,29 @@ export function Overview() {
             Quick Actions
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <button className="btn-secondary text-left p-4 hover:bg-primary-50 border-primary-200" disabled>
+            <button className="btn-secondary text-left p-4 hover:bg-primary-50 border-primary-200" onClick={() => navigate('/agents')}>
               <Users className="w-5 h-5 text-primary-600 mb-2" />
               <p className="font-medium text-secondary-900">View All Agents</p>
               <p className="text-xs text-secondary-500">Manage agent registry</p>
-              <span className="badge badge-warning mt-1 inline-block">Demo Only</span>
+              <span className="badge badge-info mt-1 inline-block">Open registry</span>
             </button>
-            <button className="btn-secondary text-left p-4 hover:bg-primary-50 border-primary-200" disabled>
+            <button className="btn-secondary text-left p-4 hover:bg-primary-50 border-primary-200" onClick={() => navigate('/transactions')}>
               <CreditCard className="w-5 h-5 text-primary-600 mb-2" />
               <p className="font-medium text-secondary-900">Monitor Transactions</p>
               <p className="text-xs text-secondary-500">Review payment activity</p>
-              <span className="badge badge-warning mt-1 inline-block">Demo Only</span>
+              <span className="badge badge-info mt-1 inline-block">Open monitor</span>
             </button>
-            <button className="btn-secondary text-left p-4 hover:bg-primary-50 border-primary-200" disabled>
+            <button className="btn-secondary text-left p-4 hover:bg-primary-50 border-primary-200" onClick={() => navigate('/security-events')}>
               <ShieldCheck className="w-5 h-5 text-primary-600 mb-2" />
               <p className="font-medium text-secondary-900">Security Events</p>
               <p className="text-xs text-secondary-500">Investigate alerts</p>
-              <span className="badge badge-warning mt-1 inline-block">Demo Only</span>
+              <span className="badge badge-info mt-1 inline-block">Open events</span>
             </button>
-            <button className="btn-secondary text-left p-4 hover:bg-primary-50 border-primary-200" disabled>
+            <button className="btn-secondary text-left p-4 hover:bg-primary-50 border-primary-200" onClick={() => navigate('/attack-simulator')}>
               <TrendingUp className="w-5 h-5 text-primary-600 mb-2" />
               <p className="font-medium text-secondary-900">Risk Analytics</p>
               <p className="text-xs text-secondary-500">View risk trends</p>
-              <span className="badge badge-warning mt-1 inline-block">Demo Only</span>
+              <span className="badge badge-info mt-1 inline-block">Run simulator</span>
             </button>
           </div>
         </div>
@@ -197,10 +199,10 @@ export function Overview() {
             <Activity className="w-5 h-5 text-primary-600" />
           </div>
           <div>
-            <p className="font-medium text-primary-800">Phase 1 - Synthetic Demonstration Data</p>
+            <p className="font-medium text-primary-800">Synthetic Demonstration Data</p>
             <p className="text-sm text-primary-600 mt-1">
               All data shown is generated for demonstration purposes. No real agent authentication,
-              AI anomaly detection, or PayPal payment execution is implemented in this phase.
+              Some dashboard records are synthetic. PayPal execution remains behind the secured checkout flow.
             </p>
           </div>
         </div>
