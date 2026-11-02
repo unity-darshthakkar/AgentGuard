@@ -1,0 +1,79 @@
+"""Isolated, server-side attack simulations for the admin demonstration."""
+
+import json
+import base64
+import uuid
+from datetime import datetime, timedelta
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from app.models import Agent, AgentCredential, AgentStatus, AuthorizationDecision, AuthorizationDecisionRecord, Base, CredentialStatus
+from app.services.auth import (
+    AuthorizationService, canonical_request_string, compute_body_hash, consume_nonce,
+    create_spending_policy, release_budget, verify_signature,
+)
+from app.services.anomaly_detection import AnomalyDetectionService
+
+
+def _keypair():
+    private = ed25519.Ed25519PrivateKey.generate()
+    public = private.public_key().public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo).decode()
+    return private, public
+
+
+def _agent(db: Session, label: str, private, public: str):
+    agent = Agent(agent_id=f"SIM-{label}-{uuid.uuid4().hex[:8]}", name=f"Simulator {label}", description="Isolated demo agent", status=AgentStatus.ACTIVE, owner_type="human", owner_name="AgentGuard Demo", owner_email="demo@agentguard.local")
+    db.add(agent); db.flush()
+    credential = AgentCredential(agent_id=agent.id, key_id=f"sim-key-{uuid.uuid4().hex[:10]}", public_key=public, algorithm="Ed25519", status=CredentialStatus.ACTIVE, issued_at=datetime.utcnow())
+    db.add(credential)
+    create_spending_policy(db, agent, "human:demo@agentguard.local", 2_000_000, 20_000_000, ["USD"])
+    db.commit()
+    return agent, credential
+
+
+def _signed_check(db: Session, agent, private, credential, replay=False):
+    nonce = f"sim-nonce-{uuid.uuid4().hex}"
+    now = datetime.utcnow().isoformat()
+    body = {"scenario": "impersonation"}
+    canonical = canonical_request_string("POST", "/api/attack-simulator", now, nonce, compute_body_hash(body))
+    signature = base64.b64encode(private.sign(canonical.encode())).decode()
+    valid = verify_signature(serialization.load_pem_public_key(credential.public_key.encode()), canonical.encode(), signature)
+    consumed = consume_nonce(db, agent.id, nonce)
+    replay_rejected = not consume_nonce(db, agent.id, nonce)
+    db.rollback()
+    return {"verification_status": "valid" if valid else "invalid", "replay_rejected": replay_rejected, "explanation": "The Ed25519 signature was valid. The second request was rejected because its nonce had already been consumed (replay protection)."}
+
+
+def run_simulation() -> dict:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    Factory = sessionmaker(bind=engine, expire_on_commit=False)
+    db = Factory()
+    try:
+        results = []
+        private, public = _keypair()
+        agent, credential = _agent(db, "LEGITIMATE", private, public)
+        policy = agent.spending_policy
+        decision, reasons, _, before, after = AuthorizationService(db).evaluate(agent, credential, policy, 2500, "USD", "merchant-grocery", "retail", "Routine purchase", "sim-legit")
+        if after > before: release_budget(db, agent.id, 2500)
+        results.append({"id": "legitimate", "title": "Legitimate agent", "agent_id": agent.agent_id, "merchant": "merchant-grocery", "amount_cents": 2500, "verification_status": "valid", "risk_score": 0, "decision": decision.value, "signals": [], "explanation": "; ".join(reasons)})
+
+        private, public = _keypair(); agent, credential = _agent(db, "COMPROMISED", private, public)
+        now = datetime.utcnow()
+        for i in range(25):
+            db.add(AuthorizationDecisionRecord(request_id=f"sim-{uuid.uuid4().hex}", idempotency_key=f"sim-{uuid.uuid4().hex}", agent_id=agent.id, credential_id=credential.id, policy_id=agent.spending_policy.id, amount_cents=1000, currency="USD", merchant_id="merchant-known", merchant_category="retail", decided_at=now - timedelta(minutes=i), decision=AuthorizationDecision.ALLOW, reasons="[]", daily_spent_before_cents=0, daily_spent_after_cents=0, risk_score=0, risk_level="minimal"))
+        db.commit()
+        assessment = AnomalyDetectionService(db).assess_transaction(agent.id, 1_000_000, "merchant-new")
+        decision = AuthorizationDecision.BLOCK if assessment["risk_score"] >= 90 else AuthorizationDecision.REVIEW if assessment["risk_score"] >= 60 else AuthorizationDecision.ALLOW
+        results.append({"id": "compromised", "title": "Compromised agent", "agent_id": agent.agent_id, "merchant": "merchant-new", "amount_cents": 1_000_000, "verification_status": "valid", "risk_score": assessment["risk_score"], "risk_level": assessment["risk_severity"], "decision": decision.value, "signals": assessment["anomaly_signals"], "explanation": "Valid identity, but the behavioral profile is anomalous."})
+
+        private, public = _keypair(); agent, credential = _agent(db, "IMPERSONATION", private, public)
+        result = _signed_check(db, agent, private, credential)
+        result.update({"id": "impersonation", "title": "Impersonation attack", "agent_id": agent.agent_id, "merchant": "merchant-unknown", "amount_cents": 5000, "decision": "rejected", "risk_score": None, "signals": []})
+        results.append(result)
+        return {"isolated": True, "paypal_touched": False, "scenarios": results}
+    finally:
+        db.close(); engine.dispose()

@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-secondary-200;
+  }
+  body {
+    @apply bg-secondary-50 text-secondary-900 antialiased;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+  .btn-secondary {
+    @apply btn bg-secondary-100 text-secondary-700 hover:bg-secondary-200 focus:ring-secondary-500;
+  }
+  .btn-danger {
+    @apply btn bg-danger-500 text-white hover:bg-danger-600 focus:ring-danger-500;
+  }
+  .input {
+    @apply w-full px-3 py-2 border border-secondary-300 rounded-lg bg-white text-secondary-900 placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors;
+  }
+  .card {
+    @apply bg-white rounded-xl border border-secondary-200 shadow-sm;
+  }
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-success {
+    @apply badge bg-success-100 text-success-600;
+  }
+  .badge-warning {
+    @apply badge bg-warning-100 text-warning-600;
+  }
+  .badge-danger {
+    @apply badge bg-danger-100 text-danger-600;
+  }
+  .badge-info {
+    @apply badge bg-primary-100 text-primary-600;
+  }
+  .badge-neutral {
+    @apply badge bg-secondary-100 text-secondary-600;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.secondary.300') transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.secondary.300');
+    border-radius: 3px;
+  }
+}
+
+/* AG Grid overrides */
+.ag-theme-quartz {
+  --ag-header-height: 44px;
+  --ag-row-height: 48px;
+  --ag-font-size: 14px;
+  --ag-header-font-size: 13px;
+  --ag-border-color: theme('colors.secondary.200');
+  --ag-header-background-color: theme('colors.secondary.50');
+  --ag-row-hover-color: theme('colors.primary.50');
+  --ag-selected-row-background-color: theme('colors.primary.100');
+  --ag-odd-row-background-color: theme('colors.secondary.50 / 0.3');
+}
