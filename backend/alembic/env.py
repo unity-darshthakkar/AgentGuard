@@ -19,7 +19,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from app.core.database import Base
+from app.core.config import get_settings
+from app.core.database import Base, normalize_database_url
 from app.models import (
     Agent,
     Transaction,
@@ -31,6 +32,10 @@ from app.models import (
 )
 
 target_metadata = Base.metadata
+config.set_main_option(
+    "sqlalchemy.url",
+    normalize_database_url(get_settings().database_url).replace("%", "%%"),
+)
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

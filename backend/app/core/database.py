@@ -10,6 +10,15 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from app.core.config import get_settings
 
 
+def normalize_database_url(url: str) -> str:
+    """Use psycopg 3 for PostgreSQL while preserving local SQLite URLs."""
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg://" + url[len("postgres://"):]
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url[len("postgresql://"):]
+    return url
+
+
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
     pass
@@ -17,15 +26,16 @@ class Base(DeclarativeBase):
 
 # Create engine
 settings = get_settings()
+database_url = normalize_database_url(settings.database_url)
 engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
+    database_url,
+    connect_args={"check_same_thread": False} if database_url.startswith("sqlite") else {},
     echo=settings.debug,
     pool_pre_ping=True,
 )
 
 # Enable foreign keys for SQLite
-if "sqlite" in settings.database_url:
+if database_url.startswith("sqlite"):
 
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
