@@ -8,6 +8,8 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.11
       - key: DATABASE_URL
         sync: false
       - key: SECRET_KEY
@@ -15,7 +17,7 @@ services:
       - key: ADMIN_API_KEY
         sync: false
       - key: CORS_ORIGINS
-        value: https://agentguard-demo.onrender.com
+        value: '["https://agentguard-demo.onrender.com"]'
       - key: DEBUG
         value: "false"
       - key: PUBLIC_DEMO_MODE
