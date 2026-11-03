@@ -305,6 +305,20 @@ Use persistent PostgreSQL for operational data and set `DATABASE_URL`,
 Leave PayPal credentials unset unless Sandbox payment testing has been
 separately approved.
 
+Run the initial Neon schema migration once, from an approved operator machine
+with the backend virtual environment active and `DATABASE_URL` set privately to
+the Neon connection string:
+
+```text
+cd backend
+alembic upgrade head
+```
+
+Do not add this command to Render's start command or run it on every restart.
+Review and approve future migrations separately, then run the same command
+once before deploying the application version that requires them. The Render
+Free service starts only with `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+
 ### 3. Start the Backend
 
 From the project root:
