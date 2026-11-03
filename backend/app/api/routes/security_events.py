@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.auth_deps import require_operational_read_access
 from app.schemas import PaginationParams, PaginatedResponse, SecurityEventResponse
 from app.services import SecurityEventService
 
-router = APIRouter(prefix="/security-events", tags=["security-events"])
+router = APIRouter(prefix="/security-events", tags=["security-events"], dependencies=[Depends(require_operational_read_access)])
 
 
 def get_security_event_service(db: Session = Depends(get_db)) -> SecurityEventService:

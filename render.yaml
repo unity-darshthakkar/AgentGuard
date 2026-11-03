@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: agentguard-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agentguard-demo-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://agentguard-demo.onrender.com
+      - key: DEBUG
+        value: "false"
+      - key: PUBLIC_DEMO_MODE
+        value: "true"
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_ENVIRONMENT
+        value: sandbox
+
+  - type: web
+    name: agentguard-demo
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://agentguard-api.onrender.com/api
+      - key: VITE_PUBLIC_DEMO_MODE
+        value: "true"
+
+databases:
+  - name: agentguard-demo-db
+    plan: free

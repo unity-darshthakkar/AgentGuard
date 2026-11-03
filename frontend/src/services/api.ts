@@ -19,6 +19,7 @@ import type {
 // Development always uses Vite's same-origin proxy. This avoids stale or
 // production-oriented VITE_API_BASE_URL values in the repository .env.
 const API_BASE_URL = import.meta.env.DEV ? '/api' : (import.meta.env.VITE_API_BASE_URL || '/api');
+const PUBLIC_DEMO_MODE = import.meta.env.VITE_PUBLIC_DEMO_MODE === 'true';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -31,6 +32,12 @@ const api = axios.create({
 // Request interceptor for logging
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    if (PUBLIC_DEMO_MODE && config.method?.toLowerCase() === 'get' && config.url?.startsWith('/')) {
+      config.url = `/public-demo${config.url}`;
+    }
+    if (PUBLIC_DEMO_MODE && config.url === '/attack-simulator/run') {
+      config.url = '/public-demo/attack-simulator/run';
+    }
     console.debug(`[API] ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },

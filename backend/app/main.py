@@ -1,11 +1,12 @@
 """FastAPI application entry point."""
 
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import agents, authorize, auth, checkout, dashboard, health, policies, transactions, security_events, attack_simulator
+from app.api.routes import agents, authorize, auth, checkout, dashboard, health, policies, transactions, security_events, attack_simulator, public_demo
 from app.core.config import get_settings
 from app.core.database import init_db
 
@@ -27,9 +28,9 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         description="Zero-trust security gateway for autonomous AI agents making payments through PayPal",
         version="1.0.0-phase1",
-        docs_url="/docs",
-        redoc_url="/redoc",
-        openapi_url="/openapi.json",
+        docs_url="/docs" if settings.debug else None,
+        redoc_url="/redoc" if settings.debug else None,
+        openapi_url="/openapi.json" if settings.debug else None,
         lifespan=lifespan,
     )
 
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard.router, prefix=settings.api_prefix)
     app.include_router(security_events.router, prefix=settings.api_prefix)
     app.include_router(attack_simulator.router, prefix=settings.api_prefix)
+    app.include_router(public_demo.router, prefix=settings.api_prefix)
 
     return app
 
@@ -67,6 +69,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=int(os.getenv("PORT", "8000")),
         reload=settings.debug,
     )

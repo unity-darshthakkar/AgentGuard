@@ -7,7 +7,7 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.auth_deps import get_current_admin, verify_admin_api_key
+from app.core.auth_deps import get_current_admin, verify_admin_api_key, require_operational_read_access
 from app.core.database import get_db
 from app.models import Agent, SpendingPolicy, PolicyStatus
 from app.schemas import (
@@ -133,6 +133,7 @@ async def create_policy(
 @router.get(
     "/{agent_id}",
     response_model=SpendingPolicyResponse,
+    dependencies=[Depends(require_operational_read_access)],
     summary="Get active spending policy for an agent",
 )
 async def get_policy(

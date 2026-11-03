@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.auth_deps import require_operational_read_access
 from app.schemas import AgentDetailResponse, AgentListResponse, PaginationParams
 from app.services import AgentService
 
-router = APIRouter(prefix="/agents", tags=["agents"])
+router = APIRouter(prefix="/agents", tags=["agents"], dependencies=[Depends(require_operational_read_access)])
 
 
 def get_agent_service(db: Session = Depends(get_db)) -> AgentService:

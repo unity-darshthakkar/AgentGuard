@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,7 +20,9 @@ class Settings(BaseSettings):
 
     # Application
     app_name: str = "AgentGuard"
-    debug: bool = True
+    # Production-safe default; local development can explicitly set DEBUG=true.
+    debug: bool = False
+    public_demo_mode: bool = False
     api_prefix: str = "/api"
 
     # Database
@@ -41,6 +44,14 @@ class Settings(BaseSettings):
     paypal_client_id: Optional[str] = None
     paypal_client_secret: Optional[str] = None
     paypal_environment: str = "sandbox"  # sandbox or live
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def normalize_debug_marker(cls, value):
+        """Treat the existing release marker as the safe non-debug mode."""
+        if isinstance(value, str) and value.strip().lower() == "release":
+            return False
+        return value
 
 
 @lru_cache

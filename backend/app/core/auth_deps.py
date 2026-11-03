@@ -72,6 +72,16 @@ def get_current_admin(
     return "admin"
 
 
+def require_operational_read_access(
+    x_admin_api_key: Optional[str] = Header(None, alias="X-Admin-API-Key"),
+) -> None:
+    """Require admin credentials for operational reads in hosted demo mode."""
+    if get_settings().public_demo_mode:
+        if not x_admin_api_key:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin authentication required")
+        verify_admin_api_key(x_admin_api_key)
+
+
 # X-Owner-ID is NOT used for authentication. It is only used for audit logging.
 # All privileged operations require X-Admin-API-Key.
 def get_requester_identity(

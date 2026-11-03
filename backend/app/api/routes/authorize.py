@@ -452,6 +452,7 @@ async def authorize_payment(
 @router.get(
     "/decisions",
     response_model=AuthorizationDecisionListResponse,
+    dependencies=[Depends(verify_admin_api_key)],
     summary="Get authorization decision history",
 )
 async def get_authorization_decisions(
@@ -534,6 +535,7 @@ async def get_authorization_decisions(
 @router.get(
     "/decisions/{request_id}",
     response_model=AuthorizationDecisionResponse,
+    dependencies=[Depends(verify_admin_api_key)],
     summary="Get specific authorization decision by request ID",
 )
 async def get_authorization_decision(
@@ -779,6 +781,7 @@ async def expire_old_authorization_reservations(
 @router.get(
     "/reservations",
     response_model=AuthorizationReservationListResponse,
+    dependencies=[Depends(verify_admin_api_key)],
     summary="List authorization reservations",
 )
 async def list_authorization_reservations(
@@ -824,6 +827,7 @@ async def list_authorization_reservations(
 @router.get(
     "/reservations/{auth_decision_id}",
     response_model=AuthorizationReservationResponse,
+    dependencies=[Depends(verify_admin_api_key)],
     summary="Get reservation by authorization decision ID",
 )
 async def get_authorization_reservation(

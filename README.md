@@ -292,6 +292,19 @@ Consult `.env.example` for the complete configuration supported by the repositor
 
 Never commit `.env`, private signing keys, or PayPal credentials.
 
+#### Public Render demo
+
+For a hosted judge-facing demo, set `PUBLIC_DEMO_MODE=true` on the FastAPI
+service and `VITE_PUBLIC_DEMO_MODE=true` on the static frontend. The frontend
+then uses only the explicit `/api/public-demo/*` allowlist, which contains
+synthetic read-only data and an isolated, rate-limited simulator. Never put
+`ADMIN_API_KEY`, `SECRET_KEY`, or PayPal credentials in `VITE_*` variables.
+Keep the Vite development proxy local; do not run it as a public service.
+Use persistent PostgreSQL for operational data and set `DATABASE_URL`,
+`CORS_ORIGINS` to the deployed frontend origin, and a strong `SECRET_KEY`.
+Leave PayPal credentials unset unless Sandbox payment testing has been
+separately approved.
+
 ### 3. Start the Backend
 
 From the project root:

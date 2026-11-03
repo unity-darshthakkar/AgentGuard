@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.auth_deps import require_operational_read_access
 from app.schemas import TransactionDetailResponse, TransactionListResponse, PaginationParams
 from app.services import TransactionService
 
-router = APIRouter(prefix="/transactions", tags=["transactions"])
+router = APIRouter(prefix="/transactions", tags=["transactions"], dependencies=[Depends(require_operational_read_access)])
 
 
 def get_transaction_service(db: Session = Depends(get_db)) -> TransactionService:
