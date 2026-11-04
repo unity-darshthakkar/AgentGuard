@@ -7,7 +7,6 @@ import { Agents } from './pages/Agents';
 import { Transactions } from './pages/Transactions';
 import { SecurityEvents } from './pages/SecurityEvents';
 import { AuthorizationDecisions } from './pages/AuthorizationDecisions';
-import { Settings } from './pages/Settings';
 import { About } from './pages/About';
 import { AttackSimulator } from './pages/AttackSimulator';
 
@@ -55,14 +54,6 @@ function App() {
         element={
           <Layout title="Security Events" subtitle="Monitor and investigate anomalies">
             <SecurityEvents />
-          </Layout>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <Layout title="Settings" subtitle="Configure preferences and integrations">
-            <Settings />
           </Layout>
         }
       />

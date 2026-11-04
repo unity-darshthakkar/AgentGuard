@@ -24,12 +24,12 @@ def _keypair():
     return private, public
 
 
-def _agent(db: Session, label: str, private, public: str):
+def _agent(db: Session, label: str, private, public: str, per_transaction_limit_cents: int = 2_000_000):
     agent = Agent(agent_id=f"SIM-{label}-{uuid.uuid4().hex[:8]}", name=f"Simulator {label}", description="Isolated demo agent", status=AgentStatus.ACTIVE, owner_type="human", owner_name="AgentGuard Demo", owner_email="demo@agentguard.local")
     db.add(agent); db.flush()
     credential = AgentCredential(agent_id=agent.id, key_id=f"sim-key-{uuid.uuid4().hex[:10]}", public_key=public, algorithm="Ed25519", status=CredentialStatus.ACTIVE, issued_at=datetime.utcnow())
     db.add(credential)
-    create_spending_policy(db, agent, "human:demo@agentguard.local", 2_000_000, 20_000_000, ["USD"])
+    create_spending_policy(db, agent, "human:demo@agentguard.local", per_transaction_limit_cents, 20_000_000, ["USD"])
     db.commit()
     return agent, credential
 
@@ -61,14 +61,17 @@ def run_simulation() -> dict:
         if after > before: release_budget(db, agent.id, 2500)
         results.append({"id": "legitimate", "title": "Legitimate agent", "agent_id": agent.agent_id, "merchant": "merchant-grocery", "amount_cents": 2500, "verification_status": "valid", "authentication_outcome": "verified", "policy_outcome": "allowed", "risk_evaluated": False, "risk_evaluation_reason": "not_required_after_policy_authorization", "risk_score": None, "risk_level": None, "detection_method": "not_evaluated", "decision": decision.value, "reasons": reasons, "signals": [], "payment_status": "authorized_for_checkout", "explanation": "; ".join(reasons)})
 
-        private, public = _keypair(); agent, credential = _agent(db, "COMPROMISED", private, public)
+        private, public = _keypair(); agent, credential = _agent(db, "COMPROMISED", private, public, per_transaction_limit_cents=500_000)
         now = datetime.utcnow()
         for i in range(25):
             db.add(AuthorizationDecisionRecord(request_id=f"sim-{uuid.uuid4().hex}", idempotency_key=f"sim-{uuid.uuid4().hex}", agent_id=agent.id, credential_id=credential.id, policy_id=agent.spending_policy.id, amount_cents=1000, currency="USD", merchant_id="merchant-known", merchant_category="retail", decided_at=now - timedelta(minutes=i), decision=AuthorizationDecision.ALLOW, reasons="[]", daily_spent_before_cents=0, daily_spent_after_cents=0, risk_score=0, risk_level="minimal"))
         db.commit()
-        assessment = AnomalyDetectionService(db).assess_transaction(agent.id, 1_000_000, "merchant-new")
-        decision = AuthorizationDecision.BLOCK if assessment["risk_score"] >= 90 else AuthorizationDecision.REVIEW if assessment["risk_score"] >= 60 else AuthorizationDecision.ALLOW
-        results.append({"id": "compromised", "title": "Compromised agent", "agent_id": agent.agent_id, "merchant": "merchant-new", "amount_cents": 1_000_000, "verification_status": "valid", "authentication_outcome": "verified", "policy_outcome": "allowed", "risk_evaluated": True, "risk_score": assessment["risk_score"], "risk_level": assessment["risk_severity"], "detection_method": assessment["detection_method"], "decision": decision.value, "reasons": ["Spending policy permits the request", "Behavioral risk exceeded the intervention threshold"], "signals": assessment["anomaly_signals"], "payment_status": "denied_before_paypal", "explanation": "Valid identity and policy, but the behavioral profile is anomalous. AgentGuard stops the request before PayPal checkout."})
+        amount_cents = 1_000_000
+        decision, reasons, violations, before, after = AuthorizationService(db).evaluate(
+            agent, credential, agent.spending_policy, amount_cents, "USD", "merchant-new", "retail",
+            "Unusual high-value purchase", "sim-compromised",
+        )
+        results.append({"id": "compromised", "title": "Compromised agent", "agent_id": agent.agent_id, "merchant": "merchant-new", "amount_cents": amount_cents, "verification_status": "valid", "authentication_outcome": "verified", "policy_outcome": "blocked", "risk_evaluated": False, "risk_evaluation_reason": "policy_rejected_first", "risk_score": None, "risk_level": None, "detection_method": "not_evaluated", "decision": decision.value, "reasons": reasons + violations, "signals": [], "payment_status": "denied_before_paypal", "explanation": "Valid identity, but the $10,000 request exceeds the compromised agent's $5,000 per-transaction policy limit. AgentGuard blocks it before risk analysis and PayPal checkout."})
 
         private, public = _keypair(); agent, credential = _agent(db, "IMPERSONATION", private, public)
         result = _signed_check(db, agent, private, credential)

@@ -7,7 +7,6 @@ import {
   CreditCard,
   ShieldAlert,
   Shield,
-  Settings,
   Info,
   Siren,
 } from 'lucide-react';
@@ -19,7 +18,6 @@ const navigation = [
   { name: 'Authorization Decisions', href: '/authorization-decisions', icon: Shield },
   { name: 'Security Events', href: '/security-events', icon: ShieldAlert },
   { name: 'Attack Simulator', href: '/attack-simulator', icon: Siren },
-  { name: 'Settings', href: '/settings', icon: Settings },
   { name: 'About', href: '/about', icon: Info },
 ];
 

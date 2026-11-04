@@ -140,7 +140,7 @@ export function About() {
           <div>
             <p className="font-medium text-primary-800">PayPal AI Hackathon 2026 demonstration</p>
             <p className="text-xs text-primary-600 mt-1">
-              This is a <strong>synthetic demonstration</strong> with mock data. No real authentication, AI detection, or PayPal execution implemented.
+              The security gateway implements agent identity verification, spending-policy authorization, and explainable anomaly analysis. This public dashboard uses synthetic data; the Attack Simulator runs in an isolated in-memory environment and makes no PayPal calls. PayPal Sandbox order and capture orchestration is implemented for authenticated operational use, but a complete live Sandbox buyer-approval and capture flow is not claimed as verified here.
             </p>
           </div>
         </div>

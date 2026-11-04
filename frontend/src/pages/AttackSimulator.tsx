@@ -11,14 +11,14 @@ const decisionLabel: Record<string, string> = { allow: 'ALLOW', review: 'REVIEW'
 
 function getStages(s: Scenario): Stage[] {
   const auth = s.authentication_outcome === 'replay_rejected' ? 'fail' : 'pass';
-  const policy = s.policy_outcome === 'not_evaluated' ? 'pending' : 'pass';
+  const policy = s.policy_outcome === 'not_evaluated' ? 'pending' : s.policy_outcome === 'blocked' ? 'fail' : 'pass';
   const risk = !s.risk_evaluated ? 'pending' : s.decision === 'block' || s.decision === 'review' ? 'blocked' : 'pass';
   return [
     { label: 'Agent request', icon: Activity, status: 'pass', detail: `${money(s.amount_cents)} · ${s.merchant}` },
     { label: 'Identity verification', icon: Fingerprint, status: auth, detail: auth === 'pass' ? 'Ed25519 identity verified' : 'Nonce replay rejected' },
     { label: 'Permission check', icon: KeyRound, status: policy, detail: policy === 'pending' ? 'Not reached' : 'Request evaluated' },
-    { label: 'Spending policy', icon: WalletCards, status: policy, detail: policy === 'pass' ? 'Within configured limits' : 'Not evaluated' },
-    { label: 'AI risk analysis', icon: BrainCircuit, status: risk, detail: s.risk_evaluated ? `${s.detection_method} · score ${s.risk_score}` : s.risk_evaluation_reason === 'authentication_rejected_first' ? 'Not evaluated — authentication rejected first' : 'Not evaluated — authorization permitted by policy' },
+    { label: 'Spending policy', icon: WalletCards, status: policy, detail: policy === 'pass' ? 'Within configured limits' : policy === 'fail' ? 'Rejected by configured limits' : 'Not evaluated' },
+    { label: 'AI risk analysis', icon: BrainCircuit, status: risk, detail: s.risk_evaluated ? `${s.detection_method} · score ${s.risk_score}` : s.risk_evaluation_reason === 'authentication_rejected_first' ? 'Not evaluated — authentication rejected first' : s.risk_evaluation_reason === 'policy_rejected_first' ? 'Not evaluated — policy rejected first' : 'Not evaluated — authorization permitted by policy' },
     { label: 'Final decision', icon: ShieldCheck, status: s.decision === 'allow' ? 'pass' : 'fail', detail: decisionLabel[s.decision] || s.decision },
     { label: 'Payment gate', icon: CreditCard, status: s.payment_status === 'authorized_for_checkout' ? 'pass' : 'fail', detail: s.payment_status === 'authorized_for_checkout' ? 'Eligible to begin checkout' : 'Denied · no PayPal action' },
   ];
@@ -29,6 +29,7 @@ function Pipeline({ scenario, visible }: { scenario: Scenario; visible: number }
 }
 
 function RiskMeter({ scenario }: { scenario: Scenario }) {
+  if (scenario.risk_evaluation_reason === 'policy_rejected_first' && !scenario.risk_evaluated) return <div className="rounded-xl bg-secondary-50 p-4 text-sm text-secondary-500">Risk analysis not evaluated — policy rejected first.</div>;
   if (!scenario.risk_evaluated) return <div className="rounded-xl bg-secondary-50 p-4 text-sm text-secondary-500">{scenario.risk_evaluation_reason === 'authentication_rejected_first' ? 'Risk analysis not evaluated — authentication rejected first.' : 'Risk analysis not evaluated — authorization permitted by policy.'}</div>;
   const score = scenario.risk_score ?? 0;
   return <div className="rounded-xl bg-secondary-50 p-4"><div className="flex justify-between text-sm"><span className="font-medium">Risk score</span><span className="font-semibold">{score}/100 · {scenario.risk_level}</span></div><div className="mt-3 h-2 rounded-full bg-secondary-200 overflow-hidden"><div className={`h-full rounded-full ${score >= 90 ? 'bg-danger-500' : score >= 60 ? 'bg-warning-500' : 'bg-success-500'}`} style={{ width: `${score}%` }} /></div><p className="mt-2 text-xs text-secondary-500">Source: {scenario.detection_method === 'ml_based' ? 'Isolation Forest plus deterministic signals' : 'deterministic rule-based analysis'}</p></div>;
