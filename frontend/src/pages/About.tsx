@@ -66,15 +66,15 @@ const roadmap = [
   },
   {
     phase: 'Authentication & Payments',
-    title: 'Authentication & Payments',
+    title: 'Implemented identity, policy, and payment controls',
     status: 'complete',
     items: [
-      'mTLS/JWT agent authentication with certificate pinning',
+      'Ed25519-signed agent requests with timestamp validation and single-use nonce replay protection',
+      'Delegated spending-policy enforcement for currencies, merchants, transaction limits, and daily budgets',
       'PayPal Orders v2 Sandbox order creation and capture orchestration',
       'One genuine $5.00 USD PayPal Sandbox end-to-end test passed: signed authorization, buyer approval, capture, and budget settlement',
-      'PostgreSQL migration with connection pooling',
-      'WebSocket real-time updates replacing polling',
-      'Rate limiting and API key management',
+      'Admin API-key authentication for privileged operational routes and a rate-limited public Attack Simulator',
+      'PostgreSQL-compatible SQLAlchemy/Alembic migrations are available; WebSocket replacement for HTTP polling and general API rate limiting remain future work',
     ],
   },
   {
