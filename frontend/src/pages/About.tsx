@@ -103,6 +103,15 @@ const roadmap = [
   },
 ];
 
+const paymentProof = [
+  ['Authorization', 'ALLOW'],
+  ['Amount', '$5.00 USD'],
+  ['Buyer approval', 'Completed'],
+  ['Capture', 'COMPLETED'],
+  ['Reservation', 'CAPTURED'],
+  ['Budget settlement', 'Reserved → Captured'],
+];
+
 export function About() {
   return (
     <>
@@ -132,16 +141,36 @@ export function About() {
       </div>
 
       {/* Product status notice */}
-      <div className="mb-6 p-3 bg-primary-50 border border-primary-200 rounded-lg">
+      <div className="mb-6 p-5 bg-primary-50 border border-primary-200 rounded-lg">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
             <Info className="w-5 h-5 text-primary-600" />
           </div>
-          <div>
-            <p className="font-medium text-primary-800">PayPal AI Hackathon 2026 demonstration</p>
-            <p className="text-xs text-primary-600 mt-1">
-              The security gateway implements signed agent identity verification, spending-policy authorization, and explainable anomaly analysis. A real $5.00 USD PayPal Sandbox payment completed end to end in the local integration test, including signed authorization, buyer approval, capture, and budget settlement. This public Render dashboard uses synthetic data; its Attack Simulator runs in an isolated in-memory environment and never performs PayPal transactions. The verified Sandbox flow is local test evidence only and is not exposed through this public demo; PayPal Live and production payment processing are not claimed.
+          <div className="min-w-0 flex-1">
+            <p className="text-xl md:text-2xl font-bold leading-tight text-primary-900">
+              A real $5.00 USD PayPal Sandbox payment was completed end to end in local testing, including signed authorization, buyer approval, capture, and budget settlement.
             </p>
+            <p className="text-sm text-primary-700 mt-2">
+              This public Render demo uses synthetic data only and does not execute PayPal transactions.
+            </p>
+
+            <div className="mt-5 grid grid-cols-2 md:grid-cols-3 gap-3" aria-label="PayPal Sandbox payment evidence">
+              {paymentProof.map(([label, value]) => (
+                <div key={label} className="rounded-lg bg-white/70 border border-primary-100 px-3 py-2">
+                  <p className="text-xs text-primary-600">{label}</p>
+                  <p className="text-sm font-semibold text-primary-900 mt-0.5">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 flex flex-wrap items-center gap-2 text-xs font-medium text-primary-700" aria-label="Payment proof process">
+              {['Signed Authorization', 'Buyer Approval', 'Capture', 'Budget Settlement'].map((step, index) => (
+                <span key={step} className="flex items-center gap-2">
+                  <span className="rounded-full bg-primary-100 px-3 py-1.5">{step}</span>
+                  {index < 3 && <span aria-hidden="true">→</span>}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
