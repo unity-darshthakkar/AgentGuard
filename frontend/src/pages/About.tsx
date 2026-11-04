@@ -67,11 +67,11 @@ const roadmap = [
   {
     phase: 'Authentication & Payments',
     title: 'Authentication & Payments',
-    status: 'planned',
+    status: 'complete',
     items: [
       'mTLS/JWT agent authentication with certificate pinning',
-      'PayPal Orders v2 sandbox integration',
-      'Real payment execution with idempotency keys',
+      'PayPal Orders v2 Sandbox order creation and capture orchestration',
+      'One genuine $5.00 USD PayPal Sandbox end-to-end test passed: signed authorization, buyer approval, capture, and budget settlement',
       'PostgreSQL migration with connection pooling',
       'WebSocket real-time updates replacing polling',
       'Rate limiting and API key management',
@@ -140,7 +140,7 @@ export function About() {
           <div>
             <p className="font-medium text-primary-800">PayPal AI Hackathon 2026 demonstration</p>
             <p className="text-xs text-primary-600 mt-1">
-              The security gateway implements agent identity verification, spending-policy authorization, and explainable anomaly analysis. This public dashboard uses synthetic data; the Attack Simulator runs in an isolated in-memory environment and makes no PayPal calls. PayPal Sandbox order and capture orchestration is implemented for authenticated operational use, but a complete live Sandbox buyer-approval and capture flow is not claimed as verified here.
+              The security gateway implements signed agent identity verification, spending-policy authorization, and explainable anomaly analysis. A real $5.00 USD PayPal Sandbox payment completed end to end in the local integration test, including signed authorization, buyer approval, capture, and budget settlement. This public Render dashboard uses synthetic data; its Attack Simulator runs in an isolated in-memory environment and never performs PayPal transactions. The verified Sandbox flow is local test evidence only and is not exposed through this public demo; PayPal Live and production payment processing are not claimed.
             </p>
           </div>
         </div>
@@ -263,7 +263,7 @@ export function About() {
               Security
             </h3>
             <dl className="space-y-3 text-sm">
-              <div className="flex justify-between"><dt className="text-secondary-500">CORS</dt><dd className="text-secondary-900">Restricted to localhost:5173</dd></div>
+              <div className="flex justify-between"><dt className="text-secondary-500">CORS</dt><dd className="text-secondary-900">Restricted to the AgentGuard Render frontend origin</dd></div>
               <div className="flex justify-between"><dt className="text-secondary-500">Secrets</dt><dd className="text-secondary-900">Excluded via .gitignore</dd></div>
               <div className="flex justify-between"><dt className="text-secondary-500">Validation</dt><dd className="text-secondary-900">Pydantic schemas on all endpoints</dd></div>
             </dl>
