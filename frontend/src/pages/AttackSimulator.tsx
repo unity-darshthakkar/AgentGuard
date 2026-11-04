@@ -6,8 +6,41 @@ type Signal = { description?: string; signal?: string };
 type Scenario = { id: string; title: string; agent_id: string; merchant: string; amount_cents: number; authentication_outcome: string; policy_outcome: string; risk_evaluated: boolean; risk_evaluation_reason?: string; risk_score: number | null; risk_level?: string | null; detection_method?: string; decision: string; reasons?: string[]; explanation: string; signals: Signal[]; payment_status: string };
 type Simulation = { isolated: boolean; paypal_touched: boolean; scenarios: Scenario[] };
 type Stage = { label: string; icon: typeof Activity; status: 'pass' | 'fail' | 'blocked' | 'pending'; detail: string };
+export const ATTACK_SIMULATOR_STORAGE_KEY = 'agentguard:attack-simulator:v1';
+const STORAGE_VERSION = 1;
 const money = (cents: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
 const decisionLabel: Record<string, string> = { allow: 'ALLOW', review: 'REVIEW', block: 'BLOCK', rejected: 'REJECTED' };
+
+function isSimulation(value: unknown): value is Simulation {
+  if (!value || typeof value !== 'object') return false;
+  const simulation = value as Partial<Simulation>;
+  return typeof simulation.isolated === 'boolean' && typeof simulation.paypal_touched === 'boolean' && Array.isArray(simulation.scenarios) && simulation.scenarios.every(scenario => {
+    if (!scenario || typeof scenario !== 'object') return false;
+    const item = scenario as Partial<Scenario>;
+    return typeof item.id === 'string' && typeof item.title === 'string' && typeof item.amount_cents === 'number' && typeof item.decision === 'string' && typeof item.explanation === 'string' && Array.isArray(item.signals);
+  });
+}
+
+function readCachedSimulation(): Simulation | null {
+  try {
+    const raw = window.sessionStorage.getItem(ATTACK_SIMULATOR_STORAGE_KEY);
+    if (!raw) return null;
+    const cached: unknown = JSON.parse(raw);
+    if (!cached || typeof cached !== 'object' || (cached as { version?: unknown }).version !== STORAGE_VERSION) return null;
+    const data = (cached as { data?: unknown }).data;
+    return isSimulation(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheSimulation(simulation: Simulation) {
+  try {
+    window.sessionStorage.setItem(ATTACK_SIMULATOR_STORAGE_KEY, JSON.stringify({ version: STORAGE_VERSION, data: simulation }));
+  } catch {
+    // Storage can be unavailable or full; the live result remains usable.
+  }
+}
 
 function getStages(s: Scenario): Stage[] {
   const auth = s.authentication_outcome === 'replay_rejected' ? 'fail' : 'pass';
@@ -36,9 +69,9 @@ function RiskMeter({ scenario }: { scenario: Scenario }) {
 }
 
 export function AttackSimulator() {
-  const [result, setResult] = useState<Simulation | null>(null); const [loading, setLoading] = useState(false); const [error, setError] = useState(''); const [visible, setVisible] = useState<Record<string, number>>({});
+  const [result, setResult] = useState<Simulation | null>(() => readCachedSimulation()); const [loading, setLoading] = useState(false); const [error, setError] = useState(''); const [visible, setVisible] = useState<Record<string, number>>({});
   useEffect(() => { if (!result) return; const timers: number[] = []; result.scenarios.forEach((scenario, scenarioIndex) => { for (let stage = 0; stage < 7; stage += 1) timers.push(window.setTimeout(() => setVisible(current => ({ ...current, [scenario.id]: Math.max(current[scenario.id] ?? -1, stage) })), scenarioIndex * 150 + stage * 100)); }); return () => timers.forEach(window.clearTimeout); }, [result]);
-  async function run() { setLoading(true); setError(''); setVisible({}); try { setResult((await api.post<Simulation>('/attack-simulator/run')).data); } catch { setError('Simulation could not run. Check the local backend and admin proxy configuration.'); } finally { setLoading(false); } }
+  async function run() { setLoading(true); setError(''); setVisible({}); try { const simulation = (await api.post<Simulation>('/attack-simulator/run')).data; setResult(simulation); cacheSimulation(simulation); } catch { setError('Simulation could not run. Check the local backend and admin proxy configuration.'); } finally { setLoading(false); } }
   return <div className="space-y-6">
     <div className="card overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-primary-950 text-white"><div className="p-7 md:p-9 flex flex-col md:flex-row md:items-end justify-between gap-6"><div className="max-w-3xl"><div className="badge bg-white/10 text-primary-200 mb-4">SECURITY DECISION LAB</div><h2 className="text-3xl font-semibold tracking-tight">Stop dangerous payments before money moves.</h2><p className="mt-3 text-slate-300 leading-7">Watch AgentGuard verify identity, enforce policy, analyze behavior, and close the payment gate when an autonomous agent turns rogue.</p></div><button aria-label="Run simulation" className="btn bg-white text-slate-900 hover:bg-primary-50 min-w-40" onClick={run} disabled={loading}><Play className="w-4 h-4" />{loading ? 'Running…' : 'Run simulation'}</button></div><div className="px-7 pb-6 flex flex-wrap gap-4 text-xs text-slate-300"><span className="inline-flex gap-2 items-center"><LockKeyhole className="w-4 h-4" />Server-side demo keys</span><span className="inline-flex gap-2 items-center"><ShieldCheck className="w-4 h-4" />Isolated database</span><span className="inline-flex gap-2 items-center"><ShieldX className="w-4 h-4" />No PayPal calls</span></div></div>
     <div className="card p-5"><div className="flex items-start gap-3"><CircleAlert className="w-5 h-5 text-primary-600 mt-0.5" /><div><h3 className="font-semibold">90-second judge walkthrough</h3><p className="mt-1 text-sm text-secondary-600">Compare the approved $25 purchase, the blocked $10,000 behavioral anomaly, and the replay rejected before authorization. The payment gate is immediately before PayPal checkout.</p></div></div></div>
