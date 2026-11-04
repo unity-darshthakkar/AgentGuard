@@ -123,7 +123,7 @@ export function About() {
           and prevents unauthorized payment execution.
         </p>
         <div className="flex items-center justify-center gap-4">
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="btn-primary">
+          <a href="https://github.com/unity-darshthakkar/AgentGuard" target="_blank" rel="noopener noreferrer" className="btn-primary">
             <Github className="w-4 h-4" />
             View on GitHub
           </a>
@@ -275,7 +275,7 @@ export function About() {
       <div className="text-center py-8 border-t border-secondary-200">
         <p className="text-secondary-500">
           Built for <strong>PayPal AI Hackathon 2026</strong> •
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
+            <a href="https://github.com/unity-darshthakkar/AgentGuard" target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">
             Open Source
           </a> •
           MIT Licensed

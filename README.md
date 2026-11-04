@@ -4,6 +4,8 @@
 
 **Verify the agent. Enforce the rules. Detect the threat. Protect the payment.**
 
+**[ Live Demo — Try AgentGuard](https://agentguard-demo-18m7.onrender.com)**
+
 AgentGuard is an AI-powered security and authorization platform designed to protect payments initiated by autonomous AI agents. Built for the **PayPal AI Hackathon 2026**, it combines cryptographic agent authentication, granular spending permissions, behavioral anomaly detection, and real-time payment authorization to help prevent compromised, impersonated, or misconfigured AI agents from making unsafe purchases.
 
 As AI agents become increasingly capable of shopping, subscribing, booking, and executing transactions on behalf of users, one question becomes critical:
@@ -119,7 +121,7 @@ Blocked, review-required, or unauthenticated requests must not initiate checkout
 
 The payment lifecycle distinguishes between the agent's authorization decision, PayPal order creation, buyer approval, and completed capture.
 
-**Verification status:** Payment orchestration has been covered by automated tests using mocked PayPal responses. A complete externally verified Sandbox buyer approval and capture is a separate integration-validation milestone; no real-money payments are required for the demonstration.
+**Verification status:** In addition to automated regression tests, one genuine local PayPal Sandbox end-to-end test completed successfully: a signed $5.00 USD request was authorized, the Sandbox order was created, personal Sandbox buyer approval was confirmed, capture returned `COMPLETED`, the reservation transitioned to `CAPTURED`, reserved balance returned to `$0`, and captured spending reached `$5`. This was a local Sandbox test only; no real-money payment was made.
 
 ### Interactive Attack Simulator
 
@@ -130,8 +132,8 @@ The simulator provides three scenarios:
 | Scenario | Behavior | Expected outcome |
 |---|---|---|
 | Legitimate agent | An authorized $25 purchase within policy | `ALLOW` |
-| Compromised agent | An anomalous $10,000 purchase attempt | `BLOCK` |
-| Replay attack | A previously signed request is submitted with a reused nonce | Authentication rejected |
+| Compromised agent | A $10,000 purchase attempt exceeds the $5,000 per-transaction policy | `BLOCK` |
+| Replay attack | A previously signed request is submitted with a reused nonce | `REJECTED` before authorization |
 
 The simulator features a step-by-step security pipeline, risk visualizations where evaluation occurs, authorization explanations, payment-gate outcomes, and a guided walkthrough.
 
@@ -147,7 +149,6 @@ The administrative interface provides visibility into autonomous payment activit
 - **Authorization Decisions:** Approval, review, and blocking outcomes
 - **Security Events:** Anomalies, alerts, and suspicious behaviors
 - **Attack Simulator:** Interactive security scenarios and decision explanations
-- **Settings:** Available configuration information and clearly identified unsupported controls
 
 Supported data tables provide CSV export capabilities for the currently available filtered page data.
 
@@ -223,11 +224,12 @@ This design separates **agent trust, spending authorization, and payment executi
 | Frontend | React, TypeScript, Vite |
 | Data Grid | AG Grid |
 | Backend API | Python, FastAPI |
-| Database | SQLite, SQLAlchemy |
+| Database | SQLite for local development; Neon PostgreSQL for hosted storage via SQLAlchemy |
 | Migrations | Alembic |
 | Machine Learning | Isolation Forest, scikit-learn |
 | Cryptography | Ed25519 digital signatures |
 | Payments | PayPal Sandbox REST APIs |
+| Hosting | Render |
 | Testing | pytest, Vitest |
 | Development | Git, GitHub |
 
@@ -403,7 +405,7 @@ cd frontend
 npm run build
 ```
 
-The application has undergone automated regression testing, including mocked PayPal order and capture workflows. Passing tests do not substitute for external Sandbox buyer-approval and capture verification or a production security assessment.
+The application has undergone automated regression testing, including mocked PayPal order and capture workflows, plus one genuine local PayPal Sandbox buyer-approval and capture test. Passing tests do not substitute for a production security assessment.
 
 ## Security Design
 
@@ -463,9 +465,7 @@ The long-term vision is to make trustworthy agent authorization an integral part
 
 ## Live Demo
 
-**Deployment:** Render — live application URL to be added.
-
-The hosted demonstration is intended to showcase AgentGuard's dashboard, authorization workflow, and isolated Attack Simulator. Access to payment execution and sensitive administrative operations must remain appropriately restricted.
+The hosted Render demonstration is intended to showcase AgentGuard's dashboard, synthetic authorization workflow, and isolated Attack Simulator. It does not expose operational checkout or perform PayPal transactions. Access to payment execution and sensitive administrative operations remains restricted.
 
 ## Built for the PayPal AI Hackathon 2026
 
