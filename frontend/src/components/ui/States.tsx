@@ -1,8 +1,14 @@
 /** Loading, Error, and Empty state components */
 
 import { RefreshCw, AlertCircle, Inbox, Database } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function LoadingState({ message = 'Loading...' }: { message?: string }) {
+  const [waking, setWaking] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setWaking(true), 5_000);
+    return () => window.clearTimeout(timer);
+  }, []);
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
       <div className="relative w-10 h-10 mb-4">
@@ -11,7 +17,7 @@ export function LoadingState({ message = 'Loading...' }: { message?: string }) {
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
         </svg>
       </div>
-      <p className="text-secondary-500">{message}</p>
+      <p className="text-secondary-500">{waking ? "Our demo server is waking up. This can take about a minute on free hosting." : message}</p>
     </div>
   );
 }
@@ -58,8 +64,20 @@ export function EmptyState({
 }
 
 export function TableLoadingState({ rows = 5 }: { rows?: number }) {
+  const [waking, setWaking] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setWaking(true), 5_000);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <div className="space-y-3">
+      {waking && (
+        <p className="text-sm text-slate-500" role="status" aria-live="polite">
+          Our demo server is waking up. This can take about a minute on free hosting.
+        </p>
+      )}
       {Array.from({ length: rows }).map((_, i) => (
         <div key={i} className="animate-pulse">
           <div className="h-12 bg-secondary-100 rounded-lg" />
