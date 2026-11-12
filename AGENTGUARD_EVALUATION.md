@@ -1,5 +1,7 @@
 # AgentGuard Development Status Evaluation & Next Phase Recommendation
 
+> **Historical document — November 2, 2026.** This is a preserved development assessment and does not describe the final submitted implementation. For current status, see [README.md](README.md), the implemented [Attack Simulator](frontend/src/pages/AttackSimulator.tsx), and the risk services under [backend/app/services](backend/app/services).
+
 **Date**: 2026-11-02  
 **Hackathon Deadline**: 2026-11-12 (10 days remaining)
 

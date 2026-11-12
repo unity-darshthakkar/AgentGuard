@@ -6,6 +6,8 @@
 
 **[ Live Demo — Try AgentGuard](https://agentguard-demo-18m7.onrender.com)**
 
+[Source code](https://github.com/unity-darshthakkar/AgentGuard) · [Run locally](#getting-started)
+
 AgentGuard is an AI-powered security and authorization platform designed to protect payments initiated by autonomous AI agents. Built for the **PayPal AI Hackathon 2026**, it combines cryptographic agent authentication, granular spending permissions, behavioral anomaly detection, and real-time payment authorization to help prevent compromised, impersonated, or misconfigured AI agents from making unsafe purchases.
 
 As AI agents become increasingly capable of shopping, subscribing, booking, and executing transactions on behalf of users, one question becomes critical:
@@ -152,6 +154,8 @@ The administrative interface provides visibility into autonomous payment activit
 
 Supported data tables provide CSV export capabilities for the currently available filtered page data.
 
+The dashboard uses AG Grid for sortable and filterable security tables with client-side cell rendering, pagination, page-size selection, responsive styling, and CSV export helpers. These are standard community-grid features; AgentGuard does not claim AG Studio, pivoting, enterprise features, or agent-powered analytics.
+
 ---
 
 ## How AgentGuard Works
@@ -273,8 +277,8 @@ AgentGuard/
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repository-url>
-cd <repository-directory>
+git clone https://github.com/unity-darshthakkar/AgentGuard.git
+cd AgentGuard
 ```
 
 ### 2. Configure the Environment
@@ -337,7 +341,11 @@ Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
 ```
 
-Install the backend dependencies using the dependency manifest supplied in `backend/`.
+Install the exact pinned backend dependencies from the repository manifest:
+
+```bash
+python -m pip install -r requirements.txt
+```
 
 Apply the reviewed Alembic database migrations:
 
@@ -406,6 +414,10 @@ npm run build
 ```
 
 The application has undergone automated regression testing, including mocked PayPal order and capture workflows, plus one genuine local PayPal Sandbox buyer-approval and capture test. Passing tests do not substitute for a production security assessment.
+
+### License
+
+AgentGuard is released under the [MIT License](LICENSE). Third-party dependencies and external assets retain their own licenses.
 
 ## Security Design
 
