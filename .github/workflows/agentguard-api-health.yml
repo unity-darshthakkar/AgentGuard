@@ -1,0 +1,56 @@
+name: AgentGuard API Health
+
+on:
+  schedule:
+    - cron: '3,15,27,39,51 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agentguard-api-health
+  cancel-in-progress: false
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check public API health
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          endpoint='https://agentguard-api-zt18.onrender.com/api/health'
+          attempts=4
+          body_file="$(mktemp)"
+          trap 'rm -f "$body_file"' EXIT
+
+          for attempt in $(seq 1 "$attempts"); do
+            : > "$body_file"
+            http_code="$(curl --silent --show-error --location \
+              --connect-timeout 10 --max-time 30 \
+              --output "$body_file" --write-out '%{http_code}' \
+              "$endpoint" || true)"
+
+            if [[ "$http_code" == '200' ]] && \
+              jq --exit-status \
+                '(.status == "healthy") and (.database == "connected")' \
+                "$body_file" >/dev/null 2>&1; then
+              echo "Health check passed on attempt $attempt: $(jq -c '{status, database}' "$body_file")"
+              exit 0
+            fi
+
+            safe_payload='unavailable or invalid response'
+            if jq --exit-status 'type == "object"' "$body_file" >/dev/null 2>&1; then
+              safe_payload="$(jq -c '{status: (.status // null), database: (.database // null)}' "$body_file")"
+            fi
+            echo "Health check attempt $attempt/$attempts failed (HTTP ${http_code:-000}): $safe_payload"
+
+            if (( attempt < attempts )); then
+              sleep 15
+            fi
+          done
+
+          echo "AgentGuard API did not report healthy and connected after $attempts attempts."
+          exit 1

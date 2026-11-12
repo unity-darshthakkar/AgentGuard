@@ -388,6 +388,12 @@ Observe how the security pipeline handles a legitimate payment request, a compro
 
 The simulator is intended for demonstration and does not execute PayPal transactions.
 
+## Demo API Availability
+
+The hosted backend uses Render's free tier, whose web services may sleep after a period of inactivity. A scheduled GitHub Actions workflow checks the existing read-only health endpoint approximately every 12 minutes to help reduce cold starts. This does not guarantee 24/7 availability: GitHub scheduled jobs can be delayed or skipped, and Render may restart or suspend a service independently. Keeping a free service active may also have usage and availability implications under the provider's limits.
+
+To run the check manually, open the repository's **Actions** tab, select **AgentGuard API Health**, choose **Run workflow**, and confirm the branch. Review the workflow run and its job logs for the safe HTTP status and health fields. The workflow uses no repository secrets and calls only the public health endpoint.
+
 ## Testing
 
 AgentGuard includes automated tests for agent authentication, policy enforcement, authorization behavior, spending limits, idempotency, anomaly detection, payment orchestration, and the Attack Simulator.
